@@ -1,0 +1,6 @@
+interface:
+  display_name: "金渐成投资框架"
+  short_description: "基于本地金渐成文章证据分析美股配置与买卖节点问题"
+  default_prompt: "使用 $jinjiancheng-investing，基于本地文章证据分析美股、ETF、资产配置、建仓、加仓、减仓和风险控制问题。"
+policy:
+  allow_implicit_invocation: true
