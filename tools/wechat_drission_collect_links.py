@@ -254,7 +254,7 @@ def collect_links(
     if merge:
         merged_links = merge_links(existing_with_manifest, new_links)
         write_links(merged_links)
-        build_manifest()
+        build_manifest(verbose=True)
         print(f"\nUpdated gongzhonghao.json: {len(existing_set)} current -> {len(merged_links)} merged links")
 
     if download:
@@ -271,6 +271,7 @@ def collect_links(
                 port=port,
                 delay_seconds=delay_seconds,
                 force=False,
+                keep_browser=False,
             )
 
     return new_links

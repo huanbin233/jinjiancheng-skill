@@ -47,6 +47,12 @@ ASSET_ALIASES = {
     "META": "META",
     "美股": "US equities",
 }
+PROGRESS_EVERY = 25
+
+
+def progress_log(enabled: bool, message: str) -> None:
+    if enabled:
+        print(message, flush=True)
 
 
 class TextExtractor(HTMLParser):
@@ -109,15 +115,89 @@ def slug_for_url(url: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]+", "-", slug).strip("-")[:48]
 
 
-def build_manifest() -> list[dict[str, Any]]:
+def raw_file_exists(record: dict[str, Any]) -> bool:
+    return any((ROOT / str(record.get(key, ""))).exists() for key in ("raw_html", "raw_text"))
+
+
+def refresh_status(record: dict[str, Any]) -> str:
+    if record.get("status") == "ingested":
+        return "ingested"
+    return "raw_available" if raw_file_exists(record) else "needs_browser_export"
+
+
+def load_existing_manifest_records() -> list[dict[str, Any]]:
+    if not MANIFEST_FILE.exists():
+        return []
+    try:
+        data = json.loads(MANIFEST_FILE.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(data, list):
+        return []
+    return [item for item in data if isinstance(item, dict) and isinstance(item.get("url"), str)]
+
+
+def next_article_id(existing_records: list[dict[str, Any]]) -> str:
+    used_ids = {str(item.get("article_id")) for item in existing_records if item.get("article_id")}
+    max_number = 0
+    for article_id in used_ids:
+        match = re.fullmatch(r"A(\d+)", article_id)
+        if match:
+            max_number = max(max_number, int(match.group(1)))
+
+    while True:
+        max_number += 1
+        candidate = f"A{max_number:03d}"
+        if candidate not in used_ids:
+            return candidate
+
+
+def normalized_manifest_record(
+    record: dict[str, Any],
+    positions: list[int],
+    existing_records: list[dict[str, Any]],
+) -> dict[str, Any]:
+    record = dict(record)
+    url = str(record["url"])
+    article_id = str(record.get("article_id") or next_article_id(existing_records))
+    slug = str(record.get("slug") or slug_for_url(url))
+    record["article_id"] = article_id
+    record["url"] = url
+    record["slug"] = slug
+    record["original_positions"] = positions
+    if not record.get("raw_html"):
+        record["raw_html"] = f"raw/html/{article_id}_{slug}.html"
+    if not record.get("raw_text"):
+        record["raw_text"] = f"raw/text/{article_id}_{slug}.txt"
+    record["status"] = refresh_status(record)
+    return record
+
+
+def build_manifest(verbose: bool = False) -> list[dict[str, Any]]:
     ensure_dirs()
     positions_by_url: dict[str, list[int]] = {}
     for index, url in enumerate(read_links(), start=1):
         positions_by_url.setdefault(url, []).append(index)
 
+    progress_log(verbose, f"Refreshing manifest from {LINKS_FILE.relative_to(ROOT)}...")
+    existing_records = load_existing_manifest_records()
     records: list[dict[str, Any]] = []
-    for sequence, (url, positions) in enumerate(positions_by_url.items(), start=1):
-        article_id = f"A{sequence:03d}"
+    included_urls: set[str] = set()
+    kept_count = 0
+    new_count = 0
+
+    for existing in existing_records:
+        url = str(existing["url"])
+        if url not in positions_by_url or url in included_urls:
+            continue
+        records.append(normalized_manifest_record(existing, positions_by_url[url], existing_records))
+        included_urls.add(url)
+        kept_count += 1
+
+    for url, positions in positions_by_url.items():
+        if url in included_urls:
+            continue
+        article_id = next_article_id(existing_records + records)
         slug = slug_for_url(url)
         raw_html = f"raw/html/{article_id}_{slug}.html"
         raw_text = f"raw/text/{article_id}_{slug}.txt"
@@ -133,8 +213,13 @@ def build_manifest() -> list[dict[str, Any]]:
                 "status": status,
             }
         )
+        new_count += 1
 
     MANIFEST_FILE.write_text(json.dumps(records, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    progress_log(
+        verbose,
+        f"Manifest refreshed: {kept_count} existing kept, {new_count} new, {len(records)} total.",
+    )
     return records
 
 
@@ -325,19 +410,26 @@ def ingest_article(record: dict[str, Any]) -> dict[str, Any] | None:
     return article
 
 
-def ingest_all() -> list[dict[str, Any]]:
+def ingest_all(verbose: bool = False, progress_every: int = PROGRESS_EVERY) -> list[dict[str, Any]]:
     manifest = load_manifest()
     articles: list[dict[str, Any]] = []
     updated_manifest: list[dict[str, Any]] = []
-    for record in manifest:
+    total = len(manifest)
+    progress_log(verbose, f"Ingesting {total} manifest records...")
+    for index, record in enumerate(manifest, start=1):
         article = ingest_article(record)
         record = dict(record)
         record["status"] = "ingested" if article else "needs_browser_export"
         updated_manifest.append(record)
         if article:
             articles.append(article)
+        if verbose and (index == 1 or index % progress_every == 0 or index == total):
+            status = "ingested" if article else "pending"
+            title = str(article.get("title") or "untitled") if article else "raw file missing"
+            print(f"Ingest progress {index}/{total}: {record['article_id']} {status} - {title[:60]}", flush=True)
     MANIFEST_FILE.write_text(json.dumps(updated_manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     INDEX_FILE.write_text(json.dumps(articles, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    progress_log(verbose, f"Ingest complete: {len(articles)} articles written to {INDEX_FILE.relative_to(ROOT)}.")
     return articles
 
 
@@ -416,8 +508,14 @@ def article_summary(article: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def generate_manual() -> None:
-    articles = ingest_all()
+def generate_manual(articles: list[dict[str, Any]] | None = None, verbose: bool = False) -> None:
+    if articles is None:
+        progress_log(verbose, "Manual generation: refreshing article index first...")
+        articles = ingest_all(verbose=verbose)
+    else:
+        progress_log(verbose, f"Manual generation: using {len(articles)} already ingested articles.")
+
+    progress_log(verbose, "Manual generation: deriving rules and summary sections...")
     rules = generate_rules(articles)
     manifest = load_manifest()
     pending = [item for item in manifest if item["status"] != "ingested"]
@@ -505,7 +603,9 @@ def generate_manual() -> None:
         content.append("- 无")
     content.append("")
 
+    progress_log(verbose, f"Manual generation: writing {MANUAL_FILE.relative_to(ROOT)}...")
     MANUAL_FILE.write_text("\n".join(content), encoding="utf-8")
+    progress_log(verbose, "Manual generation complete.")
 
 
 def print_status() -> None:
@@ -524,7 +624,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "init":
-        records = build_manifest()
+        records = build_manifest(verbose=True)
         print(f"Wrote {MANIFEST_FILE.relative_to(ROOT)} with {len(records)} unique links.")
     elif args.command == "adopt":
         adopted = adopt_saved_htmls()
@@ -535,10 +635,10 @@ def main() -> None:
         else:
             print("No matching saved HTML files found.")
     elif args.command == "ingest":
-        articles = ingest_all()
+        articles = ingest_all(verbose=True)
         print(f"Ingested {len(articles)} articles into {ARTICLES_DIR.relative_to(ROOT)}.")
     elif args.command == "manual":
-        generate_manual()
+        generate_manual(verbose=True)
         print(f"Wrote {MANUAL_FILE.relative_to(ROOT)}.")
     elif args.command == "status":
         print_status()

@@ -12,7 +12,6 @@ import argparse
 import json
 import re
 import shutil
-import subprocess
 import sys
 import time
 from pathlib import Path
@@ -22,7 +21,7 @@ TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from article_workflow import MANIFEST_FILE, ROOT, build_manifest, ingest_all, load_manifest
+from article_workflow import MANIFEST_FILE, ROOT, build_manifest, generate_manual, ingest_all, load_manifest
 
 
 PROFILE_DIR = ROOT / ".browser_profile" / "drission_wechat"
@@ -195,9 +194,10 @@ def export_articles(
     port: int,
     delay_seconds: float,
     force: bool,
+    keep_browser: bool,
 ) -> int:
     if refresh_manifest:
-        build_manifest()
+        build_manifest(verbose=True)
     manifest = load_manifest()
     pending = manifest if force else [item for item in manifest if item["status"] != "ingested"]
     if limit:
@@ -233,15 +233,17 @@ def export_articles(
                 time.sleep(delay_seconds)
     finally:
         try:
-            page.quit(timeout=5, force=False)
+            page.quit(timeout=5, force=not keep_browser)
         except Exception:
             pass
 
     if exported:
         MANIFEST_FILE.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        ingest_all()
+        print("Updating article JSON index...", flush=True)
+        articles = ingest_all(verbose=True)
         if update_manual:
-            subprocess.run([sys.executable, str(ROOT / "tools" / "article_workflow.py"), "manual"], check=False)
+            print("Regenerating manual...", flush=True)
+            generate_manual(articles=articles, verbose=True)
 
     print(f"\nExported {exported}/{len(pending)} attempted articles.")
     return exported
@@ -258,6 +260,7 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=9223, help="Local Chrome debugging port for DrissionPage.")
     parser.add_argument("--delay", type=float, default=2.0, help="Seconds to wait between articles.")
     parser.add_argument("--force", action="store_true", help="Re-download all manifest articles, including already ingested ones.")
+    parser.add_argument("--keep-browser", action="store_true", help="Leave the controlled browser window open after export.")
     args = parser.parse_args()
 
     export_articles(
@@ -270,6 +273,7 @@ def main() -> None:
         port=args.port,
         delay_seconds=args.delay,
         force=args.force,
+        keep_browser=args.keep_browser,
     )
 
 
