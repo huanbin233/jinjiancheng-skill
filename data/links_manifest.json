@@ -4178,5 +4178,16 @@
     "raw_html": "raw/html/2026-04-29-0837-当他们不再期待跃龙门~.html",
     "raw_text": "raw/text/2026-04-29-0837-当他们不再期待跃龙门~.txt",
     "status": "ingested"
+  },
+  {
+    "article_id": "A381",
+    "url": "https://mp.weixin.qq.com/s/RTe65P0AnsQ9dk6_-2T2ew",
+    "slug": "RTe65P0AnsQ9dk6_-2T2ew",
+    "original_positions": [
+      381
+    ],
+    "raw_html": "raw\\html\\2026-04-30-1147-你大爷还是你大爷~.html",
+    "raw_text": "raw\\text\\2026-04-30-1147-你大爷还是你大爷~.txt",
+    "status": "ingested"
   }
 ]
