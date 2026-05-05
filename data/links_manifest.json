@@ -4189,5 +4189,27 @@
     "raw_html": "raw\\html\\2026-04-30-1147-你大爷还是你大爷~.html",
     "raw_text": "raw\\text\\2026-04-30-1147-你大爷还是你大爷~.txt",
     "status": "ingested"
+  },
+  {
+    "article_id": "A382",
+    "url": "https://mp.weixin.qq.com/s/pq_yLh2iDzdKRaGvCNAlMQ",
+    "slug": "pq_yLh2iDzdKRaGvCNAlMQ",
+    "original_positions": [
+      382
+    ],
+    "raw_html": "raw\\html\\2026-05-04-1903-转身，走向新的起点~.html",
+    "raw_text": "raw\\text\\2026-05-04-1903-转身，走向新的起点~.txt",
+    "status": "ingested"
+  },
+  {
+    "article_id": "A383",
+    "url": "https://mp.weixin.qq.com/s/BrncpQNNOok78FyLRmJcOg",
+    "slug": "BrncpQNNOok78FyLRmJcOg",
+    "original_positions": [
+      383
+    ],
+    "raw_html": "raw\\html\\2026-05-05-0950-这里的战场静悄悄~.html",
+    "raw_text": "raw\\text\\2026-05-05-0950-这里的战场静悄悄~.txt",
+    "status": "ingested"
   }
 ]
