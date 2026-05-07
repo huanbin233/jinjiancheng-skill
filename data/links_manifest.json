@@ -4211,5 +4211,27 @@
     "raw_html": "raw\\html\\2026-05-05-0950-这里的战场静悄悄~.html",
     "raw_text": "raw\\text\\2026-05-05-0950-这里的战场静悄悄~.txt",
     "status": "ingested"
+  },
+  {
+    "article_id": "A384",
+    "url": "https://mp.weixin.qq.com/s/GzCz6r7RQymWz2uq1Cgrqg",
+    "slug": "GzCz6r7RQymWz2uq1Cgrqg",
+    "original_positions": [
+      384
+    ],
+    "raw_html": "raw\\html\\2026-05-06-0943-不知野望落何处~.html",
+    "raw_text": "raw\\text\\2026-05-06-0943-不知野望落何处~.txt",
+    "status": "ingested"
+  },
+  {
+    "article_id": "A385",
+    "url": "https://mp.weixin.qq.com/s/QQ85jQ3zZPI_hATKS_okCg",
+    "slug": "QQ85jQ3zZPI_hATKS_okCg",
+    "original_positions": [
+      385
+    ],
+    "raw_html": "raw\\html\\2026-05-07-1548-看见童话~.html",
+    "raw_text": "raw\\text\\2026-05-07-1548-看见童话~.txt",
+    "status": "ingested"
   }
 ]
