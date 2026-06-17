@@ -60,6 +60,10 @@ python scripts/search_articles.py "不满仓 金字塔加仓 做T" --limit 6
 - `raw/text/*.txt`：清洗后的原始正文，包含标题、日期和来源头部。
 - `raw/html/*.html`：保存的原始文章页面。
 
+## 跨工具兼容
+
+`AGENTS.md` 提供了兼容 Claude Code、Cursor、Codex CLI 等工具的入口文件，遵循 2025 年 8 月发布的跨厂商 AGENTS.md 标准。
+
 ## 数据管道
 
 如需更新文章数据，参考 `references/pipeline.md` 中的流程说明。
