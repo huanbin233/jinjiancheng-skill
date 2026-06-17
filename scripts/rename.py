@@ -9,12 +9,7 @@ from pathlib import Path
 from typing import Any
 
 
-ROOT = Path(__file__).resolve().parents[1]
-RAW_TEXT_DIR = ROOT / "raw" / "text"
-RAW_HTML_DIR = ROOT / "raw" / "html"
-ARTICLES_DIR = ROOT / "articles"
-MANIFEST_FILE = ROOT / "data" / "links_manifest.json"
-MAP_FILE = ROOT / "data" / "filename_map.json"
+from _paths import ROOT, RAW_TEXT_DIR, RAW_HTML_DIR, ARTICLES_DIR, MANIFEST_FILE, MAP_FILE
 
 
 INVALID_CHARS = re.compile(r'[\\/:*?"<>|\r\n\t]+')

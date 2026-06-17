@@ -11,16 +11,9 @@ import time
 from pathlib import Path
 from typing import Any
 
-TOOLS_DIR = Path(__file__).resolve().parent
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-from article_workflow import ROOT
+from _paths import ROOT, DISCOVERED_FILE
 from link_harvester import DEFAULT_SOURCES, extract_links_from_text, iter_source_files, read_existing_links, write_links
-from wechat_auto_export import PROFILE_DIR, require_playwright
-
-
-DISCOVERED_FILE = ROOT / "data" / "discovered_links.json"
+from export_playwright import PROFILE_DIR, require_playwright
 
 
 COLLECT_SCRIPT = r"""
@@ -99,7 +92,7 @@ def collect_links(urls: list[str], auto_scroll_rounds: int, manual_pause: bool, 
 
     if merge and new_links:
         write_links(existing + new_links)
-        subprocess.run([sys.executable, str(ROOT / "tools" / "article_workflow.py"), "init"], check=False)
+        subprocess.run([sys.executable, str(ROOT / "scripts" / "ingest.py"), "init"], check=False)
         print(f"\nMerged into gongzhonghao.json and refreshed manifest.")
     elif merge:
         print("\nNo new links to merge.")

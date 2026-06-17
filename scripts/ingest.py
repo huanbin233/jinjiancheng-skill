@@ -17,16 +17,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 
-ROOT = Path(__file__).resolve().parents[1]
-LINKS_FILE = ROOT / "gongzhonghao.json"
-DATA_DIR = ROOT / "data"
-RAW_HTML_DIR = ROOT / "raw" / "html"
-RAW_TEXT_DIR = ROOT / "raw" / "text"
-ARTICLES_DIR = ROOT / "articles"
-MANUAL_DIR = ROOT / "manual"
-MANIFEST_FILE = DATA_DIR / "links_manifest.json"
-INDEX_FILE = DATA_DIR / "articles_index.json"
-MANUAL_FILE = MANUAL_DIR / "长期配置操作手册.md"
+from _paths import ROOT, LINKS_FILE, DATA_DIR, RAW_HTML_DIR, RAW_TEXT_DIR, ARTICLES_DIR, MANUAL_DIR, MANIFEST_FILE, INDEX_FILE, MANUAL_FILE
 INVALID_FILENAME_CHARS = re.compile(r'[\\/:*?"<>|\r\n\t]+')
 
 BUY_KEYWORDS = ("买入", "建仓", "加仓", "定投", "配置", "低估", "低位", "回调", "便宜", "机会")
@@ -572,7 +563,7 @@ def generate_manual(articles: list[dict[str, Any]] | None = None, verbose: bool 
                 "尚未归档正文。请按 `README.md` 中的浏览器半自动流程保存文章 HTML 或正文 TXT 后重新运行：",
                 "",
                 "```bash",
-                "python3 tools/article_workflow.py manual",
+                "python3 scripts/ingest.py manual",
                 "```",
                 "",
             ]

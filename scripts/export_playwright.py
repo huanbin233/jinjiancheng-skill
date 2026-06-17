@@ -15,14 +15,11 @@ import time
 from pathlib import Path
 from typing import Any
 
-TOOLS_DIR = Path(__file__).resolve().parent
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-from article_workflow import ROOT, build_manifest, ingest_all, load_manifest
+from _paths import ROOT, PLAYWRIGHT_PROFILE_DIR
+from ingest import build_manifest, ingest_all, load_manifest
 
 
-PROFILE_DIR = ROOT / ".browser_profile" / "wechat"
+PROFILE_DIR = PLAYWRIGHT_PROFILE_DIR
 
 
 CAPTURE_SCRIPT = r"""
@@ -133,7 +130,7 @@ def export_articles(limit: int | None, timeout_seconds: int, interactive: bool, 
     if exported:
         ingest_all()
         if update_manual:
-            subprocess.run([sys.executable, str(ROOT / "tools" / "article_workflow.py"), "manual"], check=False)
+            subprocess.run([sys.executable, str(ROOT / "scripts" / "ingest.py"), "manual"], check=False)
     print(f"\nExported {exported}/{len(pending)} attempted articles.")
     return exported
 

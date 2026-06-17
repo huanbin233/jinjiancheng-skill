@@ -17,14 +17,11 @@ import time
 from pathlib import Path
 from typing import Any
 
-TOOLS_DIR = Path(__file__).resolve().parent
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-from article_workflow import MANIFEST_FILE, ROOT, build_manifest, generate_manual, ingest_all, load_manifest
+from _paths import ROOT, DRISSION_PROFILE_DIR
+from ingest import MANIFEST_FILE, build_manifest, generate_manual, ingest_all, load_manifest
 
 
-PROFILE_DIR = ROOT / ".browser_profile" / "drission_wechat"
+PROFILE_DIR = DRISSION_PROFILE_DIR
 
 
 CAPTURE_SCRIPT = r"""

@@ -12,9 +12,8 @@ from pathlib import Path
 from urllib.parse import parse_qsl, quote, unquote, urlparse, urlunparse
 
 
-ROOT = Path(__file__).resolve().parents[1]
-LINKS_FILE = ROOT / "gongzhonghao.json"
-DEFAULT_SOURCES = [ROOT / "raw" / "html", ROOT / "raw" / "text", ROOT / "link_sources"]
+from _paths import ROOT, LINKS_FILE, RAW_HTML_DIR, RAW_TEXT_DIR
+DEFAULT_SOURCES = [RAW_HTML_DIR, RAW_TEXT_DIR, ROOT / "link_sources"]
 ARTICLE_PATTERNS = [
     re.compile(r"https?://mp\.weixin\.qq\.com/s/[A-Za-z0-9_-]+"),
     re.compile(r"https?://mp\.weixin\.qq\.com/s\?[^\"'<>\s\\]+"),

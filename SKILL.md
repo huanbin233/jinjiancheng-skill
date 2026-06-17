@@ -1,6 +1,6 @@
 ---
 name: jinjiancheng-investing
-description: 使用本地金渐成公众号文章知识库进行投资研究，适用于分析美股、ETF、资产配置、建仓、加仓、减仓、持有和风险控制问题。用户询问“按金渐成思路怎么看某只美股或 ETF”“总结他关于美元资产、美债、英伟达、防守型账户的观点”“这篇文章体现了什么投资原则”“按他的体系是否该建仓、加仓或减仓”时使用。
+description: 使用本地金渐成公众号文章知识库进行投资研究，适用于分析美股、ETF、资产配置、建仓、加仓、减仓、持有和风险控制问题。用户询问"按金渐成思路怎么看某只美股或ETF""总结他关于美元资产、美债、英伟达、防守型账户的观点""这篇文章体现了什么投资原则""按他的体系是否该建仓、加仓或减仓"时使用。
 ---
 
 # 金渐成投资框架
@@ -28,9 +28,9 @@ description: 使用本地金渐成公众号文章知识库进行投资研究，�
 从项目根目录运行：
 
 ```bash
-python3 .ai/skills/jinjiancheng-investing/scripts/search_articles.py "防守型账户" --limit 5
-python3 .ai/skills/jinjiancheng-investing/scripts/search_articles.py "英伟达 减仓 负成本" --limit 8 --json
-python3 .ai/skills/jinjiancheng-investing/scripts/search_articles.py "不满仓 金字塔加仓 做T" --limit 6
+python scripts/search_articles.py "防守型账户" --limit 5
+python scripts/search_articles.py "英伟达 减仓 负成本" --limit 8 --json
+python scripts/search_articles.py "不满仓 金字塔加仓 做T" --limit 6
 ```
 
 短回答优先引用 2-5 条证据，深度总结引用 5-10 条证据。先用精确中文词检索，再按 `references/query-patterns.md` 扩展相近概念和标的别名。
@@ -45,7 +45,7 @@ python3 .ai/skills/jinjiancheng-investing/scripts/search_articles.py "不满仓 
 4. `操作检查表`：行动前需要核对的条件。
 5. `风险和数据缺口`：当前价格、估值、财报、利率、流动性和用户自身风险承受力。
 
-如果用户直接要求“总结他关于某主题的观点”，使用 `观点总结 -> 原文证据 -> 可迁移原则 -> 注意事项`。
+如果用户直接要求"总结他关于某主题的观点"，使用 `观点总结 -> 原文证据 -> 可迁移原则 -> 注意事项`。
 
 ## 知识库目录
 
@@ -53,6 +53,10 @@ python3 .ai/skills/jinjiancheng-investing/scripts/search_articles.py "不满仓 
 - `articles/*.json`：结构化文章记录，包含标题、日期、链接、清洗正文、提取条件和风险备注。
 - `raw/text/*.txt`：清洗后的原始正文，包含标题、日期和来源头部。
 - `raw/html/*.html`：保存的原始文章页面。
+
+## 数据管道
+
+如需更新文章数据，参考 `references/pipeline.md` 中的流程说明。
 
 ## 边界
 

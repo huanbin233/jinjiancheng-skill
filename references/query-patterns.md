@@ -43,8 +43,8 @@
 ## 示例检索
 
 ```bash
-python3 .ai/skills/jinjiancheng-investing/scripts/search_articles.py "英伟达 NVDA AI 减仓" --limit 8
-python3 .ai/skills/jinjiancheng-investing/scripts/search_articles.py "防守型账户 压舱石 安全垫" --limit 6
-python3 .ai/skills/jinjiancheng-investing/scripts/search_articles.py "不满仓 金字塔加仓 现金" --limit 6
-python3 .ai/skills/jinjiancheng-investing/scripts/search_articles.py "标普 下跌 15% 加仓" --limit 8
+python scripts/search_articles.py "英伟达 NVDA AI 减仓" --limit 8
+python scripts/search_articles.py "防守型账户 压舱石 安全垫" --limit 6
+python scripts/search_articles.py "不满仓 金字塔加仓 现金" --limit 6
+python scripts/search_articles.py "标普 下跌 15% 加仓" --limit 8
 ```

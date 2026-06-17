@@ -11,9 +11,7 @@ from pathlib import Path
 from typing import Iterable
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[4]
-ARTICLES_DIR = PROJECT_ROOT / "articles"
-RAW_TEXT_DIR = PROJECT_ROOT / "raw" / "text"
+from _paths import ARTICLES_DIR, RAW_TEXT_DIR, PROJECT_ROOT
 
 
 ALIASES = {

@@ -16,16 +16,10 @@ import time
 from pathlib import Path
 from typing import Any
 
-TOOLS_DIR = Path(__file__).resolve().parent
-if str(TOOLS_DIR) not in sys.path:
-    sys.path.insert(0, str(TOOLS_DIR))
-
-from article_workflow import ROOT, build_manifest, load_manifest
+from _paths import ROOT, DISCOVERED_FILE
+from ingest import build_manifest, load_manifest
 from link_harvester import DEFAULT_SOURCES, extract_links_from_text, iter_source_files, read_existing_links, write_links
-from wechat_drission_export import PROFILE_DIR, export_articles, open_page
-
-
-DISCOVERED_FILE = ROOT / "data" / "discovered_links.json"
+from export_drission import PROFILE_DIR, export_articles, open_page
 
 
 COLLECT_SCRIPT = r"""
