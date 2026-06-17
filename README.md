@@ -35,6 +35,7 @@ YYYY-MM-DD-HHMM-文章标题.pdf
   - `link_harvester.py`：从本地 HTML/TXT 文件中提取微信文章链接。
   - `rename.py`：将文件重命名为统一日期格式。
 - `references/`：领域知识文档。
+  - `金渐成-人格画像.md`：博主全貌（投资哲学、人生哲学、阶层认知、教育观、写作风格）。
   - `framework.md`：投资核心框架。
   - `query-patterns.md`：检索模式指南。
   - `pipeline.md`：数据管道使用指南。
@@ -159,10 +160,11 @@ references/query-patterns.md
 
 本项目同时是一个通用 Skill，`SKILL.md` 定义了 AI agent 如何使用该知识库进行投资研究：
 
-1. 先读 `references/framework.md` 理解核心框架。
-2. 再按 `references/query-patterns.md` 扩展关键词。
-3. 用 `scripts/search_articles.py` 检索 2-5 条本地文章证据。
-4. 回答时区分"原文观点、框架推断、当前市场数据缺口"。
+1. 先读 `references/金渐成-人格画像.md` 了解博主的投资哲学和人格底色。
+2. 再读 `references/framework.md` 理解核心框架。
+3. 按 `references/query-patterns.md` 扩展关键词。
+4. 用 `scripts/search_articles.py` 检索 2-5 条本地文章证据。
+5. 回答时区分"原文观点、框架推断、当前市场数据缺口"。
 
 适合的问题：
 

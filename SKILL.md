@@ -15,13 +15,15 @@ description: 使用本地金渐成公众号文章知识库进行投资研究，�
    - `trade_review`：建仓、加仓、减仓、卖出、持有流程，或历史买卖节点复盘。
    - `macro_cycle`：美元周期、利率、流动性、衰退/复苏、风险偏好。
    - `risk_control`：仓位、现金、低成本/负成本、回撤、防守型资产。
-2. 除非用户只是要求查找某篇文章，否则先读取 `references/framework.md` 理解核心框架。
-3. 运行 `scripts/search_articles.py`，从 `articles/` 和 `raw/text/` 中收集本地原文证据。
-4. 回答时明确区分：
+   - `persona`：询问博主背景、性格、价值观、教育观、阶层认知等非投资类问题。
+2. 涉及人格、风格、价值观问题时，先读取 `references/金渐成-人格画像.md` 了解博主全貌。
+3. 除非用户只是要求查找某篇文章，否则先读取 `references/framework.md` 理解核心框架。
+4. 运行 `scripts/search_articles.py`，从 `articles/` 和 `raw/text/` 中收集本地原文证据。
+5. 回答时明确区分：
    - 原文证据直接表达了什么。
    - 根据金渐成框架推断出的判断。
    - 需要额外校验的当前市场数据。
-5. 不输出确定性的买入/卖出指令，只给出决策检查项、情景拆分和投资逻辑失效条件。
+6. 不输出确定性的买入/卖出指令，只给出决策检查项、情景拆分和投资逻辑失效条件。
 
 ## 检索命令
 
@@ -49,6 +51,10 @@ python scripts/search_articles.py "不满仓 金字塔加仓 做T" --limit 6
 
 ## 知识库目录
 
+- `references/金渐成-人格画像.md`：博主的投资哲学、人生哲学、阶层认知、教育观、写作风格等全貌。
+- `references/framework.md`：投资框架总结（三层账户、操作系统、仓位纪律、宏观节奏）。
+- `references/query-patterns.md`：检索模式指南，含主题关键词和标的别名。
+- `references/pipeline.md`：数据管道使用指南。
 - `manual/金渐成投资框架总结.md`：人工整理的总框架。
 - `articles/*.json`：结构化文章记录，包含标题、日期、链接、清洗正文、提取条件和风险备注。
 - `raw/text/*.txt`：清洗后的原始正文，包含标题、日期和来源头部。
