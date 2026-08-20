@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """将 pdf/ 中尚未入库的盲区文章，按 ingest.py 同款规则入库到 articles/ + raw/text/，并更新 data 索引。
 
-盲区判定：pdf 标题（去日期前缀、归一化）不在 articles/*.json 的 title/url 集合，
-也不在 raw/text/*.txt 的文件名集合中，即视为未入库。
+盲区判定：以 '日期-标题'(去~) 为唯一 key。pdf 文件 key 不在 articles/*.json 与
+raw/text/*.txt 的文件名 key 集合中，即视为未入库。
+注意：必须用 日期+标题 区分同名不同期的文章（如机哥两次所写
+'有些话只能点到为止' 2025 与 2026 两篇），不能用归一化标题判重。
 
 字段提取完全复用 ingest.py 的规则函数（mentioned_assets / matching_sentences 等），
 不依赖任何 LLM。数据源从 HTML/TXT 换成 PDF 文本。
@@ -42,19 +44,22 @@ def norm(s: str) -> str:
 
 
 def build_existing() -> set[str]:
-    """已入库标识集合：articles 的 title/url + raw/text 的文件名 base。"""
+    """已入库标识集合：以 '日期-标题'(去~) 为唯一 key。
+
+    关键：必须用 日期+标题 区分同名不同期的文章（如机哥两次所写的
+    '有些话只能点到为止' 2025 与 2026 两篇），否则归一化标题判重会把
+    后一篇误判为已入库而漏掉。
+    """
     existing: set[str] = set()
+
+    def add_stem(stem: str) -> None:
+        # stem 形如 YYYY-MM-DD-HHMM-title（可能含~），统一去~作为 key
+        existing.add(stem.replace("~", ""))
+
     for f in glob.glob(str(ARTICLES_DIR / "*.json")):
-        try:
-            d = json.load(open(f, encoding="utf-8"))
-        except Exception:
-            continue
-        existing.add(norm(str(d.get("title", ""))))
-        existing.add(norm(str(d.get("url", ""))))
+        add_stem(Path(f).stem)
     for f in glob.glob(str(RAW_TEXT_DIR / "*.txt")):
-        base = Path(f).stem
-        m = re.match(r"^\d{4}-\d{2}-\d{2}-\d{4}-(.+)$", base)
-        existing.add(norm(m.group(1) if m else base))
+        add_stem(Path(f).stem)
     return existing
 
 
@@ -81,7 +86,9 @@ def collect_plan(existing: set[str]) -> list[dict]:
         if not m:
             continue
         y, mo, d, hm, title = m.groups()
-        if norm(title) in existing:
+        # 用完整 '日期-标题'(去~) 作为判重 key，区分同名不同期文章
+        key = f"{y}-{mo}-{d}-{hm}-{title.replace('~', '')}"
+        if key in existing:
             continue
         plan.append(
             {
