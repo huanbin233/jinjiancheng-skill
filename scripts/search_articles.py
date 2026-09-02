@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
 
@@ -44,6 +44,25 @@ ALIASES = {
 }
 
 
+# 概念 -> 同义词组。查询词命中组内任意词（含概念名）时，整组加入概念展开词。
+# 概念展开词在打分时权重减半，避免"顺嘴提一句"的文章冲上榜首。
+# 与 references/query-patterns.md 保持一致，修改时两处同步。
+CONCEPTS = {
+    "降成本": ["做t", "摊薄", "降低成本", "回本", "高抛低吸", "做差价"],
+    "做t": ["降成本", "摊薄", "高抛低吸", "做差价", "回本"],
+    "负成本": ["降成本", "做t", "回本", "摊薄"],
+    "建仓": ["买入", "底仓", "左侧", "分批", "试错"],
+    "加仓": ["金字塔加仓", "越跌越买", "补仓", "抄底"],
+    "减仓": ["止盈", "卖出", "清仓", "落袋", "高抛", "获利了结"],
+    "不满仓": ["留现金", "子弹", "备用金", "7成", "7.5成", "半仓", "现金为王"],
+    "满仓": ["仓位", "重仓", "加杠杆"],
+    "防守型资产": ["压舱石", "安全垫", "财富锚", "短债", "红利", "股息", "债券"],
+    "第一或唯一": ["龙头", "垄断", "护城河", "不可替代"],
+    "美元资产": ["美元现金", "美债", "美元定存", "海外配置", "全球配置"],
+    "策略迭代": ["策略过期", "体系迭代", "重构", "复盘"],
+}
+
+
 @dataclass
 class Article:
     title: str
@@ -51,6 +70,11 @@ class Article:
     source_file: Path
     url: str
     text: str
+    core_thesis: str = ""
+    buy_conditions: list[str] = field(default_factory=list)
+    hold_conditions: list[str] = field(default_factory=list)
+    sell_conditions: list[str] = field(default_factory=list)
+    risk_notes: list[str] = field(default_factory=list)
 
 
 class ChineseArgumentParser(argparse.ArgumentParser):
@@ -71,23 +95,40 @@ def normalize_space(text: str) -> str:
     return re.sub(r"\s+", " ", text or "").strip()
 
 
-def tokenize_query(query: str, expand_aliases: bool = True) -> list[str]:
+def tokenize_query(query: str, expand_aliases: bool = True) -> tuple[list[str], list[str], list[str]]:
+    """返回 (用户原词, 标的别名, 概念展开词) 三组。
+
+    权重语义：原词与标的别名同权（都是用户明确要查的），
+    概念展开词减半（只是语义相关，避免噪音文章冲榜）。
+    """
     raw_terms = [
         part.strip()
         for part in re.split(r"[\s,，;；|/]+", query)
         if part.strip()
     ]
-    terms: list[str] = []
+    primary: list[str] = []
+    alias_terms: list[str] = []
+    concept_terms: list[str] = []
     for term in raw_terms:
-        if term not in terms:
-            terms.append(term)
+        if term not in primary:
+            primary.append(term)
         if expand_aliases:
             for alias in ALIASES.get(term.lower(), []) + ALIASES.get(term, []):
-                if alias not in terms:
-                    terms.append(alias)
+                if alias not in primary and alias not in alias_terms and alias not in concept_terms:
+                    alias_terms.append(alias)
+            term_lower = term.lower()
+            for concept, synonyms in CONCEPTS.items():
+                group = [concept] + list(synonyms)
+                if term_lower in {g.lower() for g in group}:
+                    for word in group:
+                        w = word.lower()
+                        if w == term_lower:
+                            continue
+                        if w not in primary and w not in alias_terms and w not in concept_terms:
+                            concept_terms.append(w)
     if query.strip() and not raw_terms:
-        terms.append(query.strip())
-    return terms
+        primary.append(query.strip())
+    return primary, alias_terms, concept_terms
 
 
 def read_json_article(path: Path) -> Article | None:
@@ -112,7 +153,18 @@ def read_json_article(path: Path) -> Article | None:
         " ".join(map(str, data.get("reduce_or_exit_conditions") or [])),
         " ".join(map(str, data.get("risk_notes") or [])),
     ]
-    return Article(title=title, date=date, source_file=path, url=url, text="\n".join(text_parts))
+    return Article(
+        title=title,
+        date=date,
+        source_file=path,
+        url=url,
+        text="\n".join(text_parts),
+        core_thesis=str(data.get("core_thesis") or ""),
+        buy_conditions=list(data.get("buy_or_accumulate_conditions") or []),
+        hold_conditions=list(data.get("hold_conditions") or []),
+        sell_conditions=list(data.get("reduce_or_exit_conditions") or []),
+        risk_notes=list(data.get("risk_notes") or []),
+    )
 
 
 def parse_header_value(lines: list[str], names: Iterable[str]) -> str:
@@ -186,13 +238,24 @@ def matched_terms(article: Article, terms: list[str]) -> list[str]:
     return [term for term in terms if contains_term(haystack, term) > 0]
 
 
-def score_article(article: Article, terms: list[str]) -> int:
+def score_article(
+    article: Article,
+    primary_terms: list[str],
+    alias_terms: list[str],
+    concept_terms: list[str],
+) -> int:
     score = 0
-    for term in terms:
-        title_hits = contains_term(article.title, term)
-        text_hits = contains_term(article.text, term)
-        score += title_hits * 20
-        score += min(text_hits, 12)
+    # 用户原词与标的别名同权
+    for term in primary_terms:
+        score += contains_term(article.title, term) * 20
+        score += min(contains_term(article.text, term), 12)
+    for term in alias_terms:
+        score += contains_term(article.title, term) * 20
+        score += min(contains_term(article.text, term), 12)
+    # 概念展开词权重减半
+    for term in concept_terms:
+        score += contains_term(article.title, term) * 10
+        score += min(contains_term(article.text, term), 6)
     return score
 
 
@@ -220,13 +283,14 @@ def snippet(article: Article, terms: list[str], context: int) -> str:
 
 
 def search(query: str, limit: int, source: str, context: int) -> list[dict[str, object]]:
-    terms = tokenize_query(query)
+    primary, alias_terms, concept_terms = tokenize_query(query)
+    all_terms = primary + alias_terms + concept_terms
     scored: list[tuple[int, Article, list[str]]] = []
     for article in iter_articles(source):
-        matches = matched_terms(article, terms)
+        matches = matched_terms(article, all_terms)
         if not matches:
             continue
-        score = score_article(article, terms)
+        score = score_article(article, primary, alias_terms, concept_terms)
         if score <= 0:
             continue
         scored.append((score, article, matches))
@@ -244,6 +308,11 @@ def search(query: str, limit: int, source: str, context: int) -> list[dict[str, 
                 "matched_terms": matches,
                 "evidence_snippet": snippet(article, matches, context),
                 "score": score,
+                "core_thesis": article.core_thesis,
+                "buy_or_accumulate_conditions": article.buy_conditions,
+                "hold_conditions": article.hold_conditions,
+                "reduce_or_exit_conditions": article.sell_conditions,
+                "risk_notes": article.risk_notes,
             }
         )
     return results
@@ -263,6 +332,36 @@ def print_markdown(results: list[dict[str, object]]) -> None:
         print()
 
 
+def print_timeline(results: list[dict[str, object]]) -> None:
+    """按日期升序输出观点时间线，按年份分组，展示每篇的核心观点与买卖条件。"""
+    if not results:
+        print("未找到匹配结果。")
+        return
+    print(f"观点时间线（按日期升序，共 {len(results)} 篇）：\n")
+    current_year = ""
+    for item in results:
+        year = str(item["date"])[:4] or "?"
+        if year != current_year:
+            current_year = year
+            print(f"———— {current_year} ————")
+        print(f"[{item['date']}] {item['title']}")
+        thesis = str(item.get("core_thesis") or "").strip()
+        if thesis:
+            print(f"  核心观点: {thesis[:90]}")
+        for label, key in (
+            ("建仓/加仓", "buy_or_accumulate_conditions"),
+            ("持有条件", "hold_conditions"),
+            ("减仓/退出", "reduce_or_exit_conditions"),
+            ("风险备注", "risk_notes"),
+        ):
+            conds = item.get(key) or []
+            if conds:
+                shown = "；".join(str(c)[:40] for c in conds[:2])
+                print(f"  {label}: {shown}")
+        print(f"  来源: {item['source_file']}")
+        print()
+
+
 def main() -> int:
     parser = ChineseArgumentParser(
         description=__doc__,
@@ -271,7 +370,7 @@ def main() -> int:
     )
     parser.add_argument("-h", "--help", action="help", help="显示帮助信息并退出")
     parser.add_argument("query", help="检索词，例如：'英伟达 NVDA 减仓'")
-    parser.add_argument("--limit", type=int, default=8, help="最多返回多少条结果。")
+    parser.add_argument("--limit", type=int, default=None, help="最多返回多少条结果。")
     parser.add_argument("--context", type=int, default=120, help="首个命中词前后的片段字符数。")
     parser.add_argument(
         "--source",
@@ -279,10 +378,19 @@ def main() -> int:
         default="both",
         help="检索来源：both 为结构化文章和正文，articles 只查结构化文章，raw 只查正文。",
     )
+    parser.add_argument("--timeline", action="store_true", help="按日期升序输出观点时间线（默认 limit 30，可用 --limit 调整）。")
     parser.add_argument("--json", action="store_true", help="输出 JSON，而不是易读文本。")
     args = parser.parse_args()
 
-    results = search(args.query, max(1, args.limit), args.source, max(40, args.context))
+    limit = args.limit if args.limit is not None else (30 if args.timeline else 8)
+    results = search(args.query, max(1, limit), args.source, max(40, args.context))
+    if args.timeline:
+        results.sort(key=lambda r: (str(r["date"]), str(r["title"])))
+        if args.json:
+            print(json.dumps(results, ensure_ascii=False, indent=2))
+        else:
+            print_timeline(results)
+        return 0
     if args.json:
         print(json.dumps(results, ensure_ascii=False, indent=2))
     else:
